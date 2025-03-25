@@ -55,5 +55,14 @@ sidebar<-shinydashboardPlus::dashboardSidebar(
                                   ,action_Button_ID="buttInp_getFXgraphs_d1"
                                   ,title_HTML="Forex daily data")
     #---------------------------------------------------------------------------
+    ,menuItem(text="FOREX H1 data"
+              ,tabName="FX_H1_tab"
+              ,icon=icon("chart-line")
+    )
+    ,myConditionalPanel_Graphs_UI("FX_H1_tab",input_Sidebar="FX_H1_tab"
+                                  ,select_Input_ID="slcInp_FXrate_h1"
+                                  ,action_Button_ID="buttInp_getFXgraphs_h1"
+                                  ,title_HTML="Forex daily data")
+    #---------------------------------------------------------------------------
   )
 )

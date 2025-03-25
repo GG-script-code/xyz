@@ -385,9 +385,12 @@ optimize_ADX<-function(adx_n, forex_data=FX_Data){
 }
 
 # Compute FOREX metrics ----
-fnc_test_metrics_FX_Data<-function(path_Input=path_input_forexSb
-                                   , to_be_optimize=c("SMA", "EMA", "MACD", "RSI", "STOCH", "BBands", "ADX")){
-  # path_Input=path_input_forexSb; to_be_optimize=c("SMA", "EMA", "MACD", "RSI", "STOCH", "BBands", "ADX")
+fnc_test_metrics_FX_Data<-function(to_be_optimize_FX=c("CADCHF", "EURCAD", "EURCHF", "EURGBP", "EURUSD", "GBPCAD", "GBPCHF", "GBPUSD", "USDCAD", "USDCHF")
+                                   , to_be_optimize_param=c("SMA", "EMA", "MACD", "RSI", "STOCH", "BBands", "ADX")
+                                   , path_Input=path_input_forexSb
+                                   , path_Parameters=path_parameters){
+  
+  # path_Input=path_input_forexSb; to_be_optimize_param=c("SMA", "EMA", "MACD", "RSI", "STOCH", "BBands", "ADX"); to_be_optimize_FX=c("CADCHF", "EURCAD", "EURCHF", "EURGBP", "EURUSD", "GBPCAD", "GBPCHF", "GBPUSD", "USDCAD", "USDCHF")
   
   set_init_points<-10; set_n_iter<-30; set_acq<-"ucb"; set_kappa<-2.5
   
@@ -398,6 +401,18 @@ fnc_test_metrics_FX_Data<-function(path_Input=path_input_forexSb
   
   for(Periodicity in c("H1")){
     # Periodicity<-"H1"
+    
+    file_param_metrics<-file.path(path_Parameters, paste0("parameters_metrics_", Periodicity,".xlsx"))
+    
+    {
+      par_metr_SMA<-readxl::read_xlsx(file_param_metrics, sheet="SMA")
+      par_metr_EMA<-readxl::read_xlsx(file_param_metrics, sheet="EMA")
+      par_metr_MACD<-readxl::read_xlsx(file_param_metrics, sheet="MACD")
+      par_metr_RSI<-readxl::read_xlsx(file_param_metrics, sheet="RSI")
+      par_metr_STOCH<-readxl::read_xlsx(file_param_metrics, sheet="STOCH")
+      par_metr_BBands<-readxl::read_xlsx(file_param_metrics, sheet="BBands")
+      par_metr_ADX<-readxl::read_xlsx(file_param_metrics, sheet="ADX")
+    }
     
     # list FOREX data DOWNLOADED
     FX_Data_List<-list.files(file.path(path_Input, Periodicity),pattern=".feather$")
@@ -411,268 +426,312 @@ fnc_test_metrics_FX_Data<-function(path_Input=path_input_forexSb
       
       forex_symbol<-FX_Dataset%>%str_split_i("_", i=1)
       
-      # Upload the data for the FX symbol
-      FX_Data<-read_feather(file.path(path_Input,Periodicity,FX_Dataset))%>%
-        slice_tail(n=10000)
+      if(forex_symbol%in%to_be_optimize_FX){
+        
+        # Upload the data for the FX symbol
+        FX_Data<-read_feather(file.path(path_Input,Periodicity,FX_Dataset))%>%
+          slice_tail(n=7500)
+        
+        if("SMA"%in%to_be_optimize_param){
+          opt_results<-BayesianOptimization(
+            FUN=function(short_sma, long_sma){
+              optimize_SMA(short_sma, long_sma, forex_data=FX_Data)
+            }
+            ,bounds=list(
+              short_sma=c(20, 70)
+              ,long_sma=c(100, 200)
+            )
+            ,init_points=set_init_points
+            ,n_iter=set_n_iter
+            ,acq=set_acq
+            ,kappa=set_kappa
+          )
+          
+          best_params_bay<-opt_results$Best_Par
+          
+          ga_results<-ga(
+            type="real-valued"
+            , fitness=function(x) -optimize_SMA(x[1], x[2], forex_data=FX_Data)$Score
+            , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
+            , upper=as.numeric(best_params_bay)*1.2
+            , popSize=set_popSize  # Dimensione della popolazione
+            , maxiter=set_maxiter  # Numero di generazioni
+            , elitism=set_elitism  # Mantiene i migliori individui
+          )
+          
+          best_params_ga<-ga_results@solution
+          
+          x1<-mean(best_params_ga[,1],na.rm=T)
+          x2<-mean(best_params_ga[,2],na.rm=T)
+          
+          best_params_tbl<-tibble(symbol=forex_symbol
+                                  ,short_sma=x1
+                                  ,long_sma=x2)
+          
+          test_results[[Periodicity]][["SMA"]][[forex_symbol]]<-best_params_tbl
+          par_metr_SMA<-par_metr_SMA%>%bind_rows(best_params_tbl)
+          
+        }
+        gc()
+        if("EMA"%in%to_be_optimize_param){
+          opt_results<-BayesianOptimization(
+            FUN=function(short_ema, long_ema){
+              optimize_EMA(short_ema, long_ema, forex_data=FX_Data)
+            }
+            ,bounds=list(
+              short_ema=c(20, 70)
+              ,long_ema=c(100, 200)
+            )
+            ,init_points=set_init_points
+            ,n_iter=set_n_iter
+            ,acq=set_acq
+            ,kappa=set_kappa
+          )
+          
+          best_params_bay<-opt_results$Best_Par
+          
+          ga_results<-ga(
+            type="real-valued"
+            , fitness=function(x) -optimize_EMA(x[1], x[2], forex_data=FX_Data)$Score
+            , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
+            , upper=as.numeric(best_params_bay)*1.2
+            , popSize=set_popSize  # Dimensione della popolazione
+            , maxiter=set_maxiter  # Numero di generazioni
+            , elitism=set_elitism  # Mantiene i migliori individui
+          )
+          
+          best_params_ga<-ga_results@solution
+          
+          x1<-mean(best_params_ga[,1],na.rm=T)
+          x2<-mean(best_params_ga[,2],na.rm=T)
+          
+          best_params_tbl<-tibble(symbol=forex_symbol
+                                  ,short_ema=x1
+                                  ,long_ema=x2)
+          
+          test_results[[Periodicity]][["EMA"]][[forex_symbol]]<-best_params_tbl
+          par_metr_EMA<-par_metr_EMA%>%bind_rows(best_params_tbl)
+        }
+        gc()
+        if("MACD"%in%to_be_optimize_param){
+          opt_results<-BayesianOptimization(
+            FUN=function(macd_nF, macd_nSl, macd_nSi){
+              optimize_MACD(macd_nF, macd_nSl, macd_nSi, forex_data=FX_Data)
+            }
+            ,bounds=list(
+              macd_nF=c(10, 15), macd_nSl=c(20, 30), macd_nSi=c(5, 10)
+            )
+            ,init_points=set_init_points
+            ,n_iter=set_n_iter
+            ,acq=set_acq
+            ,kappa=set_kappa
+          )
+          
+          best_params_bay<-opt_results$Best_Par
+          
+          ga_results<-ga(
+            type="real-valued"
+            , fitness=function(x) -optimize_MACD(x[1], x[2], x[3], forex_data=FX_Data)$Score
+            , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
+            , upper=as.numeric(best_params_bay)*1.2
+            , popSize=set_popSize  # Dimensione della popolazione
+            , maxiter=set_maxiter  # Numero di generazioni
+            , elitism=set_elitism  # Mantiene i migliori individui
+          )
+          
+          best_params_ga<-ga_results@solution
+          
+          x1<-mean(best_params_ga[,1],na.rm=T)
+          x2<-mean(best_params_ga[,2],na.rm=T)
+          x3<-mean(best_params_ga[,3],na.rm=T)
+          
+          best_params_tbl<-tibble(symbol=forex_symbol
+                                  ,macd_nF=x1
+                                  ,macd_nSl=x2
+                                  ,macd_nSi=x3)
+          
+          test_results[[Periodicity]][["MACD"]][[forex_symbol]]<-best_params_tbl
+          par_metr_MACD<-par_metr_MACD%>%bind_rows(best_params_tbl)
+        }
+        gc()
+        if("RSI"%in%to_be_optimize_param){
+          opt_results<-BayesianOptimization(
+            FUN=function(rsi_n){
+              optimize_RSI(rsi_n, forex_data=FX_Data)
+            }
+            ,bounds=list(
+              rsi_n=c(10, 25)
+            )
+            ,init_points=set_init_points
+            ,n_iter=set_n_iter
+            ,acq=set_acq
+            ,kappa=set_kappa
+          )
+          
+          best_params_bay<-opt_results$Best_Par
+          
+          ga_results<-ga(
+            type="real-valued"
+            , fitness=function(x) -optimize_RSI(x[1], forex_data=FX_Data)$Score
+            , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
+            , upper=as.numeric(best_params_bay)*1.2
+            , popSize=set_popSize  # Dimensione della popolazione
+            , maxiter=set_maxiter  # Numero di generazioni
+            , elitism=set_elitism  # Mantiene i migliori individui
+          )
+          
+          best_params_ga<-ga_results@solution
+          
+          x1<-mean(best_params_ga[,1],na.rm=T)
+          
+          best_params_tbl<-tibble(symbol=forex_symbol
+                                  ,rsi_n=x1)
+          
+          test_results[[Periodicity]][["RSI"]][[forex_symbol]]<-best_params_tbl
+          par_metr_RSI<-par_metr_RSI%>%bind_rows(best_params_tbl)
+        }
+        gc()
+        if("STOCH"%in%to_be_optimize_param){
+          opt_results<-BayesianOptimization(
+            FUN=function(stoch_nFk, stoch_nFd, stoch_nSd, stoch_smooth){
+              optimize_STOCH(stoch_nFk, stoch_nFd, stoch_nSd, stoch_smooth, forex_data=FX_Data)
+            }
+            ,bounds=list(
+              stoch_nFk=c(10, 20), stoch_nFd=c(2, 5), stoch_nSd=c(2, 5), stoch_smooth=c(1, 2)
+            )
+            ,init_points=set_init_points
+            ,n_iter=set_n_iter
+            ,acq=set_acq
+            ,kappa=set_kappa
+          )
+          
+          best_params_bay<-opt_results$Best_Par
+          
+          ga_results<-ga(
+            type="real-valued"
+            , fitness=function(x) -optimize_STOCH(x[1], x[2], x[3], x[4], forex_data=FX_Data)$Score
+            , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
+            , upper=as.numeric(best_params_bay)*1.2
+            , popSize=set_popSize  # Dimensione della popolazione
+            , maxiter=set_maxiter  # Numero di generazioni
+            , elitism=set_elitism  # Mantiene i migliori individui
+          )
+          
+          best_params_ga<-ga_results@solution
+          
+          x1<-mean(best_params_ga[,1],na.rm=T)
+          x2<-mean(best_params_ga[,2],na.rm=T)
+          x3<-mean(best_params_ga[,3],na.rm=T)
+          x4<-mean(best_params_ga[,4],na.rm=T)
+          
+          best_params_tbl<-tibble(symbol=forex_symbol
+                                  ,stoch_nFk=x1
+                                  ,stoch_nFd=x2
+                                  ,stoch_nSd=x3
+                                  ,stoch_smooth=x4)
+          
+          test_results[[Periodicity]][["STOCH"]][[forex_symbol]]<-best_params_tbl
+          par_metr_STOCH<-par_metr_STOCH%>%bind_rows(best_params_tbl)
+        }
+        gc()
+        if("BBands"%in%to_be_optimize_param){
+          opt_results<-BayesianOptimization(
+            FUN=function(BB_n, BB_sd){
+              optimize_BBands(BB_n, BB_sd, forex_data=FX_Data)
+            }
+            ,bounds=list(
+              BB_n=c(15, 25), BB_sd=c(2,3)
+            )
+            ,init_points=set_init_points
+            ,n_iter=set_n_iter
+            ,acq=set_acq
+            ,kappa=set_kappa
+          )
+          
+          best_params_bay<-opt_results$Best_Par
+          
+          ga_results<-ga(
+            type="real-valued"
+            , fitness=function(x) -optimize_BBands(x[1], x[2], forex_data=FX_Data)$Score
+            , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
+            , upper=as.numeric(best_params_bay)*1.2
+            , popSize=set_popSize  # Dimensione della popolazione
+            , maxiter=set_maxiter  # Numero di generazioni
+            , elitism=set_elitism  # Mantiene i migliori individui
+          )
+          
+          best_params_ga<-ga_results@solution
+          
+          x1<-mean(best_params_ga[,1],na.rm=T)
+          x2<-mean(best_params_ga[,2],na.rm=T)
+          
+          best_params_tbl<-tibble(symbol=forex_symbol
+                                  ,BB_n=x1
+                                  ,BB_sd=x2)
+          
+          test_results[[Periodicity]][["BBands"]][[forex_symbol]]<-best_params_tbl
+          par_metr_BBands<-par_metr_BBands%>%bind_rows(best_params_tbl)
+        }
+        gc()
+        if("ADX"%in%to_be_optimize_param){
+          opt_results<-BayesianOptimization(
+            FUN=function(adx_n){
+              optimize_ADX(adx_n, forex_data=FX_Data)
+            }
+            ,bounds=list(
+              adx_n=c(10, 25)
+            )
+            ,init_points=set_init_points
+            ,n_iter=set_n_iter
+            ,acq=set_acq
+            ,kappa=set_kappa
+          )
+          
+          best_params_bay<-opt_results$Best_Par
+          
+          ga_results<-ga(
+            type="real-valued"
+            , fitness=function(x) -optimize_ADX(x[1], forex_data=FX_Data)$Score
+            , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
+            , upper=as.numeric(best_params_bay)*1.2
+            , popSize=set_popSize  # Dimensione della popolazione
+            , maxiter=set_maxiter  # Numero di generazioni
+            , elitism=set_elitism  # Mantiene i migliori individui
+          )
+          
+          best_params_ga<-ga_results@solution
+          
+          x1<-mean(best_params_ga[,1],na.rm=T)
+          
+          best_params_tbl<-tibble(symbol=forex_symbol
+                                  ,adx_n=x1)
+          
+          test_results[[Periodicity]][["ADX"]][[forex_symbol]]<-best_params_tbl
+          par_metr_ADX<-par_metr_ADX%>%bind_rows(best_params_tbl)
+        }
+        gc()
+        
+      }
       
-      if("SMA"%in%to_be_optimize){
-        opt_results<-BayesianOptimization(
-          FUN=function(short_sma, long_sma){
-            optimize_SMA(short_sma, long_sma, forex_data=FX_Data)
-          }
-          ,bounds=list(
-            short_sma=c(20, 70)
-            ,long_sma=c(100, 200)
-          )
-          ,init_points=set_init_points
-          ,n_iter=set_n_iter
-          ,acq=set_acq
-          ,kappa=set_kappa
-        )
-        
-        best_params_bay<-opt_results$Best_Par
-        
-        ga_results<-ga(
-          type="real-valued"
-          , fitness=function(x) -optimize_SMA(x[1], x[2], forex_data=FX_Data)$Score
-          , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
-          , upper=as.numeric(best_params_bay)*1.2
-          , popSize=set_popSize  # Dimensione della popolazione
-          , maxiter=set_maxiter  # Numero di generazioni
-          , elitism=set_elitism  # Mantiene i migliori individui
-        )
-        
-        best_params_ga<-ga_results@solution
-        
-        x1<-mean(best_params_ga[,1],na.rm=T)
-        x2<-mean(best_params_ga[,2],na.rm=T)
-        
-        test_results[[Periodicity]][["SMA"]][[forex_symbol]]<-tibble(symbol=forex_symbol
-                                                                     ,short_sma=x1
-                                                                     ,long_sma=x2)
-      }
-      gc()
-      if("EMA"%in%to_be_optimize){
-        opt_results<-BayesianOptimization(
-          FUN=function(short_ema, long_ema){
-            optimize_EMA(short_ema, long_ema, forex_data=FX_Data)
-          }
-          ,bounds=list(
-            short_ema=c(20, 70)
-            ,long_ema=c(100, 200)
-          )
-          ,init_points=set_init_points
-          ,n_iter=set_n_iter
-          ,acq=set_acq
-          ,kappa=set_kappa
-        )
-        
-        best_params_bay<-opt_results$Best_Par
-        
-        ga_results<-ga(
-          type="real-valued"
-          , fitness=function(x) -optimize_EMA(x[1], x[2], forex_data=FX_Data)$Score
-          , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
-          , upper=as.numeric(best_params_bay)*1.2
-          , popSize=set_popSize  # Dimensione della popolazione
-          , maxiter=set_maxiter  # Numero di generazioni
-          , elitism=set_elitism  # Mantiene i migliori individui
-        )
-        
-        best_params_ga<-ga_results@solution
-        
-        x1<-mean(best_params_ga[,1],na.rm=T)
-        x2<-mean(best_params_ga[,2],na.rm=T)
-        
-        test_results[[Periodicity]][["EMA"]][[forex_symbol]]<-tibble(symbol=forex_symbol
-                                                                     ,short_ema=x1
-                                                                     ,long_ema=x2)
-      }
-      gc()
-      if("MACD"%in%to_be_optimize){
-        opt_results<-BayesianOptimization(
-          FUN=function(macd_nF, macd_nSl, macd_nSi){
-            optimize_MACD(macd_nF, macd_nSl, macd_nSi, forex_data=FX_Data)
-          }
-          ,bounds=list(
-            macd_nF=c(10, 15), macd_nSl=c(20, 30), macd_nSi=c(5, 10)
-          )
-          ,init_points=set_init_points
-          ,n_iter=set_n_iter
-          ,acq=set_acq
-          ,kappa=set_kappa
-        )
-        
-        best_params_bay<-opt_results$Best_Par
-        
-        ga_results<-ga(
-          type="real-valued"
-          , fitness=function(x) -optimize_MACD(x[1], x[2], x[3], forex_data=FX_Data)$Score
-          , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
-          , upper=as.numeric(best_params_bay)*1.2
-          , popSize=set_popSize  # Dimensione della popolazione
-          , maxiter=set_maxiter  # Numero di generazioni
-          , elitism=set_elitism  # Mantiene i migliori individui
-        )
-        
-        best_params_ga<-ga_results@solution
-        
-        x1<-mean(best_params_ga[,1],na.rm=T)
-        x2<-mean(best_params_ga[,2],na.rm=T)
-        x3<-mean(best_params_ga[,3],na.rm=T)
-        
-        test_results[[Periodicity]][["MACD"]][[forex_symbol]]<-tibble(symbol=forex_symbol
-                                                                     ,macd_nF=x1
-                                                                     ,macd_nSl=x2
-                                                                     ,macd_nSi=x3)
-      }
-      gc()
-      if("RSI"%in%to_be_optimize){
-        opt_results<-BayesianOptimization(
-          FUN=function(rsi_n){
-            optimize_RSI(rsi_n, forex_data=FX_Data)
-          }
-          ,bounds=list(
-            rsi_n=c(10, 25)
-          )
-          ,init_points=set_init_points
-          ,n_iter=set_n_iter
-          ,acq=set_acq
-          ,kappa=set_kappa
-        )
-        
-        best_params_bay<-opt_results$Best_Par
-        
-        ga_results<-ga(
-          type="real-valued"
-          , fitness=function(x) -optimize_RSI(x[1], forex_data=FX_Data)$Score
-          , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
-          , upper=as.numeric(best_params_bay)*1.2
-          , popSize=set_popSize  # Dimensione della popolazione
-          , maxiter=set_maxiter  # Numero di generazioni
-          , elitism=set_elitism  # Mantiene i migliori individui
-        )
-        
-        best_params_ga<-ga_results@solution
-        
-        x1<-mean(best_params_ga[,1],na.rm=T)
-        
-        test_results[[Periodicity]][["RSI"]][[forex_symbol]]<-tibble(symbol=forex_symbol
-                                                                     ,rsi_n=x1)
-      }
-      gc()
-      if("STOCH"%in%to_be_optimize){
-        opt_results<-BayesianOptimization(
-          FUN=function(stoch_nFk, stoch_nFd, stoch_nSd, stoch_smooth){
-            optimize_STOCH(stoch_nFk, stoch_nFd, stoch_nSd, stoch_smooth, forex_data=FX_Data)
-          }
-          ,bounds=list(
-            stoch_nFk=c(10, 20), stoch_nFd=c(2, 5), stoch_nSd=c(2, 5), stoch_smooth=c(1, 2)
-          )
-          ,init_points=set_init_points
-          ,n_iter=set_n_iter
-          ,acq=set_acq
-          ,kappa=set_kappa
-        )
-        
-        best_params_bay<-opt_results$Best_Par
-        
-        ga_results<-ga(
-          type="real-valued"
-          , fitness=function(x) -optimize_STOCH(x[1], x[2], x[3], x[4], forex_data=FX_Data)$Score
-          , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
-          , upper=as.numeric(best_params_bay)*1.2
-          , popSize=set_popSize  # Dimensione della popolazione
-          , maxiter=set_maxiter  # Numero di generazioni
-          , elitism=set_elitism  # Mantiene i migliori individui
-        )
-        
-        best_params_ga<-ga_results@solution
-        
-        x1<-mean(best_params_ga[,1],na.rm=T)
-        x2<-mean(best_params_ga[,2],na.rm=T)
-        x3<-mean(best_params_ga[,3],na.rm=T)
-        x4<-mean(best_params_ga[,4],na.rm=T)
-        
-        test_results[[Periodicity]][["STOCH"]][[forex_symbol]]<-tibble(symbol=forex_symbol
-                                                                     ,stoch_nFk=x1
-                                                                     ,stoch_nFd=x2
-                                                                     ,stoch_nSd=x3
-                                                                     ,stoch_smooth=x4)
-      }
-      gc()
-      if("BBands"%in%to_be_optimize){
-        opt_results<-BayesianOptimization(
-          FUN=function(BB_n, BB_sd){
-            optimize_BBands(BB_n, BB_sd, forex_data=FX_Data)
-          }
-          ,bounds=list(
-            BB_n=c(15, 25), BB_sd=c(2,3)
-          )
-          ,init_points=set_init_points
-          ,n_iter=set_n_iter
-          ,acq=set_acq
-          ,kappa=set_kappa
-        )
-        
-        best_params_bay<-opt_results$Best_Par
-        
-        ga_results<-ga(
-          type="real-valued"
-          , fitness=function(x) -optimize_BBands(x[1], x[2], forex_data=FX_Data)$Score
-          , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
-          , upper=as.numeric(best_params_bay)*1.2
-          , popSize=set_popSize  # Dimensione della popolazione
-          , maxiter=set_maxiter  # Numero di generazioni
-          , elitism=set_elitism  # Mantiene i migliori individui
-        )
-        
-        best_params_ga<-ga_results@solution
-        
-        x1<-mean(best_params_ga[,1],na.rm=T)
-        x2<-mean(best_params_ga[,2],na.rm=T)
-        
-        test_results[[Periodicity]][["BBands"]][[forex_symbol]]<-tibble(symbol=forex_symbol
-                                                                     ,BB_n=x1
-                                                                     ,BB_sd=x2)
-      }
-      gc()
-      if("ADX"%in%to_be_optimize){
-        opt_results<-BayesianOptimization(
-          FUN=function(adx_n){
-            optimize_ADX(adx_n, forex_data=FX_Data)
-          }
-          ,bounds=list(
-            adx_n=c(10, 25)
-          )
-          ,init_points=set_init_points
-          ,n_iter=set_n_iter
-          ,acq=set_acq
-          ,kappa=set_kappa
-        )
-        
-        best_params_bay<-opt_results$Best_Par
-        
-        ga_results<-ga(
-          type="real-valued"
-          , fitness=function(x) -optimize_ADX(x[1], forex_data=FX_Data)$Score
-          , lower=as.numeric(best_params_bay)*0.8  # Range attorno ai migliori parametri di BO
-          , upper=as.numeric(best_params_bay)*1.2
-          , popSize=set_popSize  # Dimensione della popolazione
-          , maxiter=set_maxiter  # Numero di generazioni
-          , elitism=set_elitism  # Mantiene i migliori individui
-        )
-        
-        best_params_ga<-ga_results@solution
-        
-        x1<-mean(best_params_ga[,1],na.rm=T)
-        
-        test_results[[Periodicity]][["ADX"]][[forex_symbol]]<-tibble(symbol=forex_symbol
-                                                                     ,adx_n=x1)
-      }
-      gc()
       pb$tick()
     }
+    writexl::write_xlsx(x=list("SMA"=par_metr_SMA%>%arrange(symbol)%>%
+                                 mutate_if(is.numeric, round, digits=0)
+                               ,"EMA"=par_metr_EMA%>%arrange(symbol)%>%
+                                 mutate_if(is.numeric, round, digits=0)
+                               ,"MACD"=par_metr_MACD%>%arrange(symbol)%>%
+                                 mutate_if(is.numeric, round, digits=0)
+                               ,"RSI"=par_metr_RSI%>%arrange(symbol)%>%
+                                 mutate_if(is.numeric, round, digits=0)
+                               ,"STOCH"=par_metr_STOCH%>%arrange(symbol)%>%
+                                 mutate_if(is.numeric, round, digits=0)
+                               ,"BBands"=par_metr_BBands%>%arrange(symbol)%>%
+                                 mutate_if(is.numeric, round, digits=0)
+                               ,"ADX"=par_metr_ADX%>%arrange(symbol)%>%
+                                 mutate_if(is.numeric, round, digits=0)
+    )
+    ,path=file.path(path_parameters, paste0(Sys.Date(), "_parameters_metrics_", Periodicity,".xlsx")))
+    
     print(paste0("FX ",Periodicity," metrics tested!"))
   }
   
@@ -680,31 +739,29 @@ fnc_test_metrics_FX_Data<-function(path_Input=path_input_forexSb
   
 }
 
+test_metrics<-fnc_test_metrics_FX_Data(to_be_optimize_FX=c("GBPCAD", "GBPCHF", "GBPUSD", "USDCAD", "USDCHF"))
 
-test_metrics<-fnc_test_metrics_FX_Data()
-
-
-writexl::write_xlsx(x=list("SMA"=test_metrics$daily$SMA%>%
-                             bind_rows()%>%
-                             mutate_if(is.numeric, round, digits=0)
-                           ,"EMA"=test_metrics$daily$EMA%>%
-                             bind_rows()%>%
-                             mutate_if(is.numeric, round, digits=0)
-                           ,"MACD"=test_metrics$daily$MACD%>%
-                             bind_rows()%>%
-                             mutate_if(is.numeric, round, digits=0)
-                           ,"RSI"=test_metrics$daily$RSI%>%
-                             bind_rows()%>%
-                             mutate_if(is.numeric, round, digits=0)
-                           ,"STOCH"=test_metrics$daily$STOCH%>%
-                             bind_rows()%>%
-                             mutate_if(is.numeric, round, digits=0)
-                           ,"BBands"=test_metrics$daily$BBands%>%
-                             bind_rows()%>%
-                             mutate_if(is.numeric, round, digits=0)
-                           ,"ADX"=test_metrics$daily$ADX%>%
-                             bind_rows()%>%
-                             mutate_if(is.numeric, round, digits=0)
-                           )
-                    ,path=file.path(path_parameters, paste0(Sys.Date(), "_parameters_metrics_H1.xlsx")))
+# writexl::write_xlsx(x=list("SMA"=test_metrics$daily$SMA%>%
+#                              bind_rows()%>%
+#                              mutate_if(is.numeric, round, digits=0)
+#                            ,"EMA"=test_metrics$daily$EMA%>%
+#                              bind_rows()%>%
+#                              mutate_if(is.numeric, round, digits=0)
+#                            ,"MACD"=test_metrics$daily$MACD%>%
+#                              bind_rows()%>%
+#                              mutate_if(is.numeric, round, digits=0)
+#                            ,"RSI"=test_metrics$daily$RSI%>%
+#                              bind_rows()%>%
+#                              mutate_if(is.numeric, round, digits=0)
+#                            ,"STOCH"=test_metrics$daily$STOCH%>%
+#                              bind_rows()%>%
+#                              mutate_if(is.numeric, round, digits=0)
+#                            ,"BBands"=test_metrics$daily$BBands%>%
+#                              bind_rows()%>%
+#                              mutate_if(is.numeric, round, digits=0)
+#                            ,"ADX"=test_metrics$daily$ADX%>%
+#                              bind_rows()%>%
+#                              mutate_if(is.numeric, round, digits=0)
+#                            )
+#                     ,path=file.path(path_parameters, paste0(Sys.Date(), "_parameters_metrics_H1.xlsx")))
 

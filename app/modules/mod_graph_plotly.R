@@ -40,6 +40,29 @@ graph_plotly_server<-function(id,FX_Selected,FX_Periodicity,save_Widget,grp_Type
                              ,FX_Periodicity="daily"
           )
         }
+      }else if(FX_Periodicity=="H1"){
+        
+        if(grp_Type=="FX_candlestick"){
+          fnc_plotly_FX_candlestick(FX_Selected=FX_Selected()
+                                    ,FX_Periodicity="H1"
+          )
+        }else if(grp_Type=="FX_volatility"){
+          fnc_plotly_FX_volatility(FX_Selected=FX_Selected()
+                                   ,FX_Periodicity="H1"
+          )
+        }else if(grp_Type=="FX_trendFollowing"){
+          fnc_plotly_FX_trendFollowing(FX_Selected=FX_Selected()
+                                       ,FX_Periodicity="H1"
+          )
+        }else if(grp_Type=="FX_momentum"){
+          fnc_plotly_FX_momentum(FX_Selected=FX_Selected()
+                                 ,FX_Periodicity="H1"
+          )
+        }else if(grp_Type=="FX_macd"){
+          fnc_plotly_FX_MACD(FX_Selected=FX_Selected()
+                             ,FX_Periodicity="H1"
+          )
+        }
       }
     })
   })

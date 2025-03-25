@@ -116,6 +116,49 @@ server<-function(input, output, session){
                         ,FX_Periodicity="daily"
                         ,grp_Type="FX_macd"
     )
+    # FX_H1_tab--------------------------------------------------------------
+    table_DT_server("tbl_DT_FX_signals_h1"
+                    ,FX_Selected=reactive(input$slcInp_FXrate_h1)%>%
+                        bindCache(input$slcInp_FXrate_h1)%>%
+                        bindEvent(input$buttInp_getFXgraphs_h1)
+                    ,FX_Periodicity="H1"
+                    ,tbl_Type="FX_signals")
+    
+    graph_plotly_server("grp_plotly_FX_candlestick_h1"
+                        ,FX_Selected=reactive(input$slcInp_FXrate_h1)%>%
+                            bindCache(input$slcInp_FXrate_h1)%>%
+                            bindEvent(input$buttInp_getFXgraphs_h1)
+                        ,FX_Periodicity="H1"
+                        ,grp_Type="FX_candlestick"
+    )
+    graph_plotly_server("grp_plotly_FX_volatility_h1"
+                        ,FX_Selected=reactive(input$slcInp_FXrate_h1)%>%
+                            bindCache(input$slcInp_FXrate_h1)%>%
+                            bindEvent(input$buttInp_getFXgraphs_h1)
+                        ,FX_Periodicity="H1"
+                        ,grp_Type="FX_volatility"
+    )
+    graph_plotly_server("grp_plotly_FX_trendFollowing_h1"
+                        ,FX_Selected=reactive(input$slcInp_FXrate_h1)%>%
+                            bindCache(input$slcInp_FXrate_h1)%>%
+                            bindEvent(input$buttInp_getFXgraphs_h1)
+                        ,FX_Periodicity="H1"
+                        ,grp_Type="FX_trendFollowing"
+    )
+    graph_plotly_server("grp_plotly_FX_momentum_h1"
+                        ,FX_Selected=reactive(input$slcInp_FXrate_h1)%>%
+                            bindCache(input$slcInp_FXrate_h1)%>%
+                            bindEvent(input$buttInp_getFXgraphs_h1)
+                        ,FX_Periodicity="H1"
+                        ,grp_Type="FX_momentum"
+    )
+    graph_plotly_server("grp_plotly_FX_macd_h1"
+                        ,FX_Selected=reactive(input$slcInp_FXrate_h1)%>%
+                            bindCache(input$slcInp_FXrate_h1)%>%
+                            bindEvent(input$buttInp_getFXgraphs_h1)
+                        ,FX_Periodicity="H1"
+                        ,grp_Type="FX_macd"
+    )
 }
 
 # Preview the UI in the console ----

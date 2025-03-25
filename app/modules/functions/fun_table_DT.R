@@ -133,7 +133,7 @@ fun_DT_FX_summary<-function(FX_Periodicity="daily" # "daily" "weekly"
 }
 #-------------------------------------------------------------------------------
 fun_DT_trading_signals<-function(FX_Selected="CADCHF"
-                                 ,FX_Periodicity="daily" # "daily"
+                                 ,FX_Periodicity="H1" # "daily"
                                  ,path_Output_Tables=path_output_tables
                                  ,path_Output_Signals=path_output_signals
                                  ,css_Styling_FTP_Complete=css_styling_FTP_complete

@@ -39,16 +39,16 @@
       install.packages("furrr")
       library(furrr)
     }
-    furrr::furrr_options(stdout=TRUE
-                         , conditions="condition"
-                         , globals=TRUE
-                         , packages=NULL
-                         , seed=FALSE
-                         , scheduling=2L
-                         , chunk_size=NULL
-                         , prefix=NULL)
-    
-    plan(multisession, workers=(parallel::detectCores()-1))
+    # furrr::furrr_options(stdout=TRUE
+    #                      , conditions="condition"
+    #                      , globals=TRUE
+    #                      , packages=NULL
+    #                      , seed=FALSE
+    #                      , scheduling=2L
+    #                      , chunk_size=NULL
+    #                      , prefix=NULL)
+    # 
+    # plan(multisession, workers=(parallel::detectCores()-1))
   }
   if(!require(progress)){
     install.packages("progress")

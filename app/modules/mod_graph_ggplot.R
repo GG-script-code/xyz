@@ -22,6 +22,12 @@ graph_ggplot_server<-function(id,FX_Periodicity,grp_Type="FX_correlation"){
           fnc_ggplot_FX_correlation(FX_Periodicity="daily")
         }
         
+      }else if(FX_Periodicity=="H1"){
+        
+        if(grp_Type=="FX_correlation"){
+          fnc_ggplot_FX_correlation(FX_Periodicity="H1")
+        }
+        
       }
     })
   })

@@ -9,8 +9,8 @@
 fnc_trading_signals<-function(path_Output=path_output_signals, path_Input=path_output_metrics){
   # path_Output=path_output_signals; path_Input=path_output_metrics
   
-  for(Periodicity in c("daily")){
-    # Periodicity<-"daily"
+  for(Periodicity in c("daily", "H1")){
+    # Periodicity<-"H1"
     
     FX_Metrics_List<-list.files(file.path(path_Input,Periodicity),pattern=".feather$")
     

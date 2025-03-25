@@ -95,6 +95,7 @@ fnc_tqGet_FX_Data<-function(FX_List=FX_list,path_Input=path_input_tqGet
 }
 
 # forexsb ----
+# https://data.forexsb.com/data-app ----
 fnc_forexSb_FX_Data<-function(FX_List=FX_list,path_Input=path_input_forexSb
                             ,last_Week_Delete=(Sys.Date()-7)){
   # FX_List=FX_list; path_Input=path_input_forexSb; last_Week_Delete=(Sys.Date()-7)

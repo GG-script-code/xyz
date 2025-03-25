@@ -38,7 +38,19 @@ table_DT_server<-function(id, FX_Periodicity, FX_Selected, tbl_Type="FX_summary"
                                   , FX_Periodicity="daily")
         }
         
-      }
+      }else 
+        
+        if(FX_Periodicity=="H1"){
+          
+          if(tbl_Type=="FX_summary"){
+            fun_DT_FX_summary(FX_Periodicity="H1")
+            
+          }else if(tbl_Type=="FX_signals"){
+            fun_DT_trading_signals(FX_Selected=FX_Selected()
+                                   , FX_Periodicity="H1")
+          }
+          
+        }
     })
   })
 }

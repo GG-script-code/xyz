@@ -149,6 +149,64 @@ body<-dashboardBody(
         )
       )
     )
+    # FX_H1_tab--------------------------------------------------------------
+    ,tabItem(
+      tabName="FX_H1_tab"
+      ,fluidRow(
+        box(
+          title="FX H1 signals"
+          ,footer=""
+          #,icon=shiny::icon("question")
+          ,status="primary"
+          ,solidHeader=TRUE
+          ,background=NULL
+          ,width=12
+          ,height=NULL
+          ,collapsible=TRUE
+          ,collapsed=FALSE
+          ,tabBox(
+            width=NULL
+            ,tabPanel(title=HTML("<b>FX signals</b>")%>%
+                        h4(align="center")
+                      ,table_DT_UI("tbl_DT_FX_signals_h1")
+                      ,width=12,status="info")
+          )
+        )
+        ,box(
+          title="FX H1 graphs"
+          ,footer=""
+          ,status="primary"
+          ,solidHeader=TRUE
+          ,background=NULL
+          ,width=12
+          ,height=NULL
+          ,collapsible=TRUE
+          ,collapsed=FALSE
+          ,tabBox(width=NULL
+                  ,tabPanel(title=HTML("<b>H1 time series</b>")%>%
+                              h4(align="center")
+                            ,graph_plotly_UI("grp_plotly_FX_candlestick_h1")
+                            ,width=12,status="info")
+                  ,tabPanel(title=HTML("<b>H1 Volatility</b>")%>%
+                              h4(align="center")
+                            ,graph_plotly_UI("grp_plotly_FX_volatility_h1")
+                            ,width=12,status="info")
+                  ,tabPanel(title=HTML("<b>H1 Trend Following</b>")%>%
+                              h4(align="center")
+                            ,graph_plotly_UI("grp_plotly_FX_trendFollowing_h1")
+                            ,width=12,status="info")
+                  ,tabPanel(title=HTML("<b>H1 Momentum</b>")%>%
+                              h4(align="center")
+                            ,graph_plotly_UI("grp_plotly_FX_momentum_h1")
+                            ,width=12,status="info")
+                  ,tabPanel(title=HTML("<b>H1 MACD</b>")%>%
+                              h4(align="center")
+                            ,graph_plotly_UI("grp_plotly_FX_macd_h1")
+                            ,width=12,status="info")
+          )
+        )
+      )
+    )
     #---------------------------------------------------------------------------
   )
 )

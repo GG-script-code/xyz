@@ -9,28 +9,49 @@
   param_D1_ADX<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_D1.xlsx"), sheet="ADX")
   
   param_metrics_D1<-list("SMA"=param_D1_SMA
-                      ,"EMA"=param_D1_EMA
-                      ,"MACD"=param_D1_MACD
-                      ,"RSI"=param_D1_RSI
-                      ,"STOCH"=param_D1_STOCH
-                      ,"BBands"=param_D1_BBands
-                      ,"ADX"=param_D1_ADX)
+                         ,"EMA"=param_D1_EMA
+                         ,"MACD"=param_D1_MACD
+                         ,"RSI"=param_D1_RSI
+                         ,"STOCH"=param_D1_STOCH
+                         ,"BBands"=param_D1_BBands
+                         ,"ADX"=param_D1_ADX)
 }
 
+{
+  param_H1_SMA<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="SMA")
+  param_H1_EMA<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="EMA")
+  param_H1_MACD<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="MACD")
+  param_H1_RSI<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="RSI")
+  param_H1_STOCH<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="STOCH")
+  param_H1_BBands<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="BBands")
+  param_H1_ADX<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="ADX")
+  
+  param_metrics_H1<-list("SMA"=param_H1_SMA
+                         ,"EMA"=param_H1_EMA
+                         ,"MACD"=param_H1_MACD
+                         ,"RSI"=param_H1_RSI
+                         ,"STOCH"=param_H1_STOCH
+                         ,"BBands"=param_H1_BBands
+                         ,"ADX"=param_H1_ADX)
+}
 
 # Compute FOREX metrics ----
-fnc_metrics_FX_Data<-function(path_Input=path_input_tqGet,path_Output=path_output_metrics,overwrite_Metrics=TRUE, param_Metrics_List=list("D1"=param_metrics_D1)){
-  # path_Input=path_input_tqGet; path_Output=path_output_metrics; overwrite_Metrics=TRUE; param_Metrics_List=list("D1"=param_metrics_D1)
+fnc_metrics_FX_Data<-function(path_Input=path_input,path_Output=path_output_metrics,overwrite_Metrics=TRUE, param_Metrics_List=list("D1"=param_metrics_D1, "H1"=param_metrics_H1)){
+  # path_Input=path_input; path_Output=path_output_metrics; overwrite_Metrics=TRUE; param_Metrics_List=list("D1"=param_metrics_D1, "H1"=param_metrics_H1)
   
-  for(Periodicity in c("daily")){
-    # Periodicity<-"daily"
+  for(Periodicity in c("daily", "H1")){
+    # Periodicity<-"H1"
     
     if(Periodicity=="daily"){
       param_Metrics<-param_Metrics_List$D1
+      path_Input_file<-file.path(path_Input, "tqGet")
+    }else if(Periodicity=="H1"){
+      param_Metrics<-param_Metrics_List$H1
+      path_Input_file<-file.path(path_Input, "forexsb")
     }
     
     # list FOREX data DOWNLOADED
-    FX_Data_List<-list.files(file.path(path_Input,Periodicity),pattern=".feather$")
+    FX_Data_List<-list.files(file.path(path_Input_file,Periodicity),pattern=".feather$")
     # list FOREX metrics COMPUTED
     FX_Metrics_List<-list.files(file.path(path_Output,Periodicity),pattern=".feather$")
     
@@ -46,9 +67,9 @@ fnc_metrics_FX_Data<-function(path_Input=path_input_tqGet,path_Output=path_outpu
       print(FX_Dataset)
       
       # Upload the data for the FX symbol
-      FX_Data<-read_feather(file.path(path_Input,Periodicity,FX_Dataset))
+      FX_Data<-read_feather(file.path(path_Input_file,Periodicity,FX_Dataset))
       # Initialize the name of the new FX metrics file
-      FX_Metrics_File<-paste0(max(FX_Data$date)%>%str_remove_all("-")
+      FX_Metrics_File<-paste0(max(FX_Data$date)%>%str_remove_all("-")%>%str_replace_all(" ", "_")%>%str_replace_all(":", "_")
                               ,"_",FX_Dataset)
       
       # If the new file is not in the FX matrics list,compute the metrics with the new data
@@ -72,8 +93,9 @@ fnc_metrics_FX_Data<-function(path_Input=path_input_tqGet,path_Output=path_outpu
           filter(symbol==FX_symbol)
         
         # Compute the metrics
-        FX_Data<-FX_Data%>%
-          filter_at(vars(open,high,low,close,adjusted),any_vars(!is.na(.)))%>%
+        FX_Data_Metrics<-FX_Data%>%
+          slice_tail(n=2000)%>%
+          filter_at(vars(open,high,low,close),any_vars(!is.na(.)))%>%
           #> Trend-Following: SMA, EMA, MACD, Ichimoku ----
           #> Strategia	Short SMA	Long SMA	Adatta a
           #> Classica	50	200	Trend-Following lento
@@ -183,7 +205,7 @@ fnc_metrics_FX_Data<-function(path_Input=path_input_tqGet,path_Output=path_outpu
                     ,n=n_ADX$adx_n)%>%
           drop_na()
         
-        write_feather(FX_Data, file.path(path_Output,Periodicity,FX_Metrics_File))
+        write_feather(FX_Data_Metrics, file.path(path_Output,Periodicity,FX_Metrics_File))
         
       }else{
         # The FX metrics are updated and I have to update the FX data file
@@ -204,7 +226,7 @@ fnc_metrics_FX_Data<-function(path_Input=path_input_tqGet,path_Output=path_outpu
             
             old_FX_File_Date<-old_FX_File%>%str_extract("[0-9]{8}")%>%ymd()
             
-            if(max(FX_Data$date)>ymd(old_FX_File_Date)){
+            if(max(FX_Data_Metrics$date)>ymd(old_FX_File_Date)){
               file.remove(file.path(path_Output,Periodicity,old_FX_File%>%str_remove_all("_overwrite")))
               message(old_FX_File," removed \1\n")
             }else{
@@ -276,9 +298,9 @@ fnc_correlation_FX_Data<-function(path_Input=path_input_tqGet,path_Output=path_o
       
       df_Dates_flt<-df_Dates_flt%>%
         #na.omit()%>%
-        left_join(FX_Data[,c("date","adjusted")],by=join_by("date"))
+        left_join(FX_Data[,c("date","close")],by=join_by("date"))
       
-      colnames(df_Dates_flt)[which(colnames(df_Dates_flt)=="adjusted")]<-FX_Data$symbol%>%unique()
+      colnames(df_Dates_flt)[which(colnames(df_Dates_flt)=="close")]<-FX_Data$symbol%>%unique()
     }
     
     # Cancella le colonne che contengono NA

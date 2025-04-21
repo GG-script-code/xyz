@@ -116,48 +116,56 @@ fnc_forexSb_FX_Data<-function(FX_List=FX_list,path_Input=path_input_forexSb
     for(FX_Symbol in names(FX_List)){
       # FX_Symbol<-"CADCHF"
       
-      FX_Input_file<-FX_Input_List[FX_Input_List%>%str_detect(FX_Symbol)]
-      
-      FX_Input_Data<-read_delim(file.path(path_Input,FX_Input_file), delim="\t")
-      colnames(FX_Input_Data)<-c("date", "open", "high", "low", "close", "volume")
-      
-      FX_Input_Data<-tibble(symbol=FX_Symbol
-             ,date=FX_Input_Data$date
-             ,open=FX_Input_Data$open
-             ,high=FX_Input_Data$high
-             ,low=FX_Input_Data$low
-             ,close=FX_Input_Data$close
-             ,volume=FX_Input_Data$volume)%>%
-        distinct()%>%
-        drop_na()
-      
-      if(paste0(FX_Symbol,"_",Periodicity,".feather")%in%FX_Data_List){
+      if(any(str_detect(FX_Input_List, FX_Symbol))){
         
-        FX_Data<-read_feather(file.path(path_Input,Periodicity
-                                        ,paste0(FX_Symbol,"_",Periodicity,".feather")))%>%
-          drop_na()%>%
-          filter(date<last_Week_Delete)%>%
-          select(c("symbol","date","open","high","low","close","volume"))
+        FX_Input_file<-FX_Input_List[FX_Input_List%>%str_detect(FX_Symbol)]
         
-        if(max(FX_Input_Data$date)>=max(FX_Data$date)){
+        FX_Input_Data<-read_delim(file.path(path_Input,FX_Input_file), delim="\t")
+        colnames(FX_Input_Data)<-c("date", "open", "high", "low", "close", "volume")
+        
+        FX_Input_Data<-tibble(symbol=FX_Symbol
+                              ,date=FX_Input_Data$date
+                              ,open=FX_Input_Data$open
+                              ,high=FX_Input_Data$high
+                              ,low=FX_Input_Data$low
+                              ,close=FX_Input_Data$close
+                              ,volume=FX_Input_Data$volume)%>%
+          distinct()%>%
+          drop_na()
+        
+        if(paste0(FX_Symbol,"_",Periodicity,".feather")%in%FX_Data_List){
           
-          FX_Data<-bind_rows(FX_Data,FX_Input_Data)%>%
-            distinct()%>%
+          FX_Data<-read_feather(file.path(path_Input,Periodicity
+                                          ,paste0(FX_Symbol,"_",Periodicity,".feather")))%>%
             drop_na()%>%
+            filter(date<last_Week_Delete)%>%
+            select(c("symbol","date","open","high","low","close","volume"))
+          
+          if(max(FX_Input_Data$date)>=max(FX_Data$date)){
+            
+            FX_Data<-bind_rows(FX_Data,FX_Input_Data)%>%
+              distinct()%>%
+              drop_na()%>%
+              arrange(date)
+            
+          }
+          
+        }else{
+          
+          FX_Data<-FX_Input_Data%>%
             arrange(date)
           
         }
         
+        write_feather(FX_Data,file.path(path_Input
+                                        , Periodicity
+                                        , paste0(FX_Symbol,"_",Periodicity,".feather")))
+        
       }else{
         
-        FX_Data<-FX_Input_Data%>%
-          arrange(date)
+        message(FX_Symbol, " input file missing!")
         
       }
-      
-      write_feather(FX_Data,file.path(path_Input
-                                      , Periodicity
-                                      , paste0(FX_Symbol,"_",Periodicity,".feather")))
       
       pb$tick()
     }

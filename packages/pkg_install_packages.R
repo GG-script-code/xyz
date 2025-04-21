@@ -34,6 +34,10 @@
     install.packages("reshape2")
     library(reshape2)
   }
+  if(!require(doParallel)){
+    install.packages("doParallel")
+    library(doParallel)
+  }
   {
     if(!require(furrr)){
       install.packages("furrr")
@@ -66,14 +70,18 @@
   
   # Parameters Optimization ----
   message("Upload ", "Parameters Optimization packages")
+  if(!require(quadprog)){
+    install.packages("quadprog")
+    library(quadprog)
+  }
   if(!require(rBayesianOptimization)){
     install.packages("rBayesianOptimization")
     library(rBayesianOptimization)
   }
-  # if(!require(ParBayesianOptimization)){
-  #   install.packages("ParBayesianOptimization")
-  #   library(ParBayesianOptimization)
-  # }
+  if(!require(ParBayesianOptimization)){
+    install.packages("ParBayesianOptimization")
+    library(ParBayesianOptimization)
+  }
   if(!require(GA)){
     install.packages("GA")
     library(GA)
@@ -94,32 +102,52 @@
     install.packages("nloptr")
     library(nloptr)
   }
+  if(!require(mlrMBO)){
+    install.packages("mlrMBO")
+    library(mlrMBO)
+  }
+  if(!require(mlr)){
+    install.packages("mlr")
+    library(mlr)
+  }
+  if(!require(ParamHelpers)){
+    install.packages("ParamHelpers")
+    library(ParamHelpers)
+  }
+  if(!require(parallelMap)){
+    install.packages("parallelMap")
+    library(parallelMap)
+  }
+  if(!require(randomForest)){
+    install.packages("randomForest")
+    library(randomForest)
+  }
   
   # Artificial Intelligence ----
-  message("Upload ", "Artificial Intelligence packages")
-  if(!require(gemini.R)){
-    install.packages("gemini.R")
-    library(gemini.R)
-  }
-  if(!require(askgpt)){
-    install.packages("askgpt")
-    library(askgpt)
-  }
-  if(!require(gptstudio)){
-    # usethis::edit_r_environ()
-    install.packages("gptstudio")
-    library(gptstudio)
-  }
-  if(!require(gpttools)){
-    # Enable repository from jameshwade
-    options(repos=c(
-      jameshwade="https://jameshwade.r-universe.dev",
-      CRAN="https://cloud.r-project.org"
-    ))
-    # Download and install gpttools in R
-    install.packages("gpttools")
-    library(gpttools)
-  }
+  # message("Upload ", "Artificial Intelligence packages")
+  # if(!require(gemini.R)){
+  #   install.packages("gemini.R")
+  #   library(gemini.R)
+  # }
+  # if(!require(askgpt)){
+  #   install.packages("askgpt")
+  #   library(askgpt)
+  # }
+  # if(!require(gptstudio)){
+  #   # usethis::edit_r_environ()
+  #   install.packages("gptstudio")
+  #   library(gptstudio)
+  # }
+  # if(!require(gpttools)){
+  #   # Enable repository from jameshwade
+  #   options(repos=c(
+  #     jameshwade="https://jameshwade.r-universe.dev",
+  #     CRAN="https://cloud.r-project.org"
+  #   ))
+  #   # Download and install gpttools in R
+  #   install.packages("gpttools")
+  #   library(gpttools)
+  # }
   # if(!require(transformers)){
   #   # https://rpubs.com/eR_ic/transfoRmers
   #   remotes::install_github("huggingface/transformers")
@@ -156,11 +184,6 @@
     install.packages("PerformanceAnalytics")
     library(PerformanceAnalytics)
   }
-  if(!require(ParBayesianOptimization)){
-    install.packages("ParBayesianOptimization")
-    library(ParBayesianOptimization)
-  }
-  
   # Time Series models ----
   message("Upload ", "Time Series models packages")
   if(!require(tidymodels)){

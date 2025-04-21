@@ -18,15 +18,15 @@
 }
 
 {
-  param_H1_SMA<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="SMA")
-  param_H1_EMA<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="EMA")
-  param_H1_MACD<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="MACD")
-  param_H1_RSI<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="RSI")
-  param_H1_STOCH<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="STOCH")
-  param_H1_BBands<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="BBands")
-  param_H1_ADX<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_H1.xlsx"), sheet="ADX")
+  param_H1_SMA<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_bay_H1.xlsx"), sheet="SMA")
+  param_H1_EMA<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_bay_H1.xlsx"), sheet="EMA")
+  param_H1_MACD<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_bay_H1.xlsx"), sheet="MACD")
+  param_H1_RSI<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_bay_H1.xlsx"), sheet="RSI")
+  param_H1_STOCH<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_bay_H1.xlsx"), sheet="STOCH")
+  param_H1_BBands<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_bay_H1.xlsx"), sheet="BBands")
+  param_H1_ADX<-readxl::read_xlsx(file.path(path_parameters, "parameters_metrics_bay_H1.xlsx"), sheet="ADX")
   
-  param_metrics_H1<-list("SMA"=param_H1_SMA
+  param_metrics_bay_H1<-list("SMA"=param_H1_SMA
                          ,"EMA"=param_H1_EMA
                          ,"MACD"=param_H1_MACD
                          ,"RSI"=param_H1_RSI
@@ -36,8 +36,8 @@
 }
 
 # Compute FOREX metrics ----
-fnc_metrics_FX_Data<-function(path_Input=path_input,path_Output=path_output_metrics,overwrite_Metrics=TRUE, param_Metrics_List=list("D1"=param_metrics_D1, "H1"=param_metrics_H1)){
-  # path_Input=path_input; path_Output=path_output_metrics; overwrite_Metrics=TRUE; param_Metrics_List=list("D1"=param_metrics_D1, "H1"=param_metrics_H1)
+fnc_metrics_FX_Data<-function(path_Input=path_input,path_Output=path_output_metrics,overwrite_Metrics=TRUE, param_Metrics_List=list("D1"=param_metrics_D1, "H1"=param_metrics_bay_H1)){
+  # path_Input=path_input; path_Output=path_output_metrics; overwrite_Metrics=TRUE; param_Metrics_List=list("D1"=param_metrics_D1, "H1"=param_metrics_bay_H1)
   
   for(Periodicity in c("daily", "H1")){
     # Periodicity<-"H1"
@@ -62,7 +62,7 @@ fnc_metrics_FX_Data<-function(path_Input=path_input,path_Output=path_output_metr
     pb<-progress_bar$new(total=(length(FX_Data_List)))
     
     for(FX_Dataset in FX_Data_List){
-      # FX_Dataset<-FX_Data_List[str_detect(FX_Data_List,"USDCAD")%>%which()]
+      # FX_Dataset<-FX_Data_List[str_detect(FX_Data_List,"CADCHF")%>%which()]
       
       print(FX_Dataset)
       
@@ -94,7 +94,7 @@ fnc_metrics_FX_Data<-function(path_Input=path_input,path_Output=path_output_metr
         
         # Compute the metrics
         FX_Data_Metrics<-FX_Data%>%
-          slice_tail(n=2000)%>%
+          #slice_tail(n=5000)%>%
           filter_at(vars(open,high,low,close),any_vars(!is.na(.)))%>%
           #> Trend-Following: SMA, EMA, MACD, Ichimoku ----
           #> Strategia	Short SMA	Long SMA	Adatta a

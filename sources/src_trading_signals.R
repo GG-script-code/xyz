@@ -121,29 +121,75 @@ fnc_trading_signals<-function(path_Output=path_output_signals, path_Input=path_o
                               Sig_ICHI+
                               Sig_MeanRev))%>%
         select(c("symbol", "date", "close", "atr", "Tot_signals", "Sig_SMA", "Sig_EMA", "Sig_MACD", "Sig_RSI", "Sig_STOCH", "Sig_BB", "Sig_ADX", "Sig_ICHI", "Sig_MeanRev"))%>%
-        arrange(date%>%desc())
-      # %>%
-      #   mutate(Signal=case_when(
-      #     Tot_signals>=3~(+1)
-      #     ,Tot_signals<=-3~(-1)
-      #     ,TRUE~NA_real_
-      #   )
-      #   ,Return=if_else(lag(close)>0,(close/lag(close, default=first(close)))-1, 0)
-      #   ,Strategy_Return=Return*replace_na(lag(Signal),0))%>%
-      #   # **Stop-Loss Dinamico con ATR**
-      #   mutate(Stop_Loss=case_when(
-      #     Signal==1~close-(atr*0.50)
-      #     ,Signal==-1~close+(atr*0.50)
-      #     ,TRUE~NA_real_)
-      #     ,Take_Profit=case_when(
-      #       Signal==1~close+(atr*1.00)
-      #       ,Signal==-1~close-(atr*1.00)
-      #       ,TRUE~NA_real_)
-      #     )
+        mutate(Return=if_else(lag(close)>0,((close/lag(close, default=first(close)))-1), 0))%>%
+        mutate(sma_StrRet=Return*replace_na(lag(Sig_SMA),0)
+               ,ema_StrRet=Return*replace_na(lag(Sig_EMA),0)
+               ,macd_StrRet=Return*replace_na(lag(Sig_MACD),0)
+               ,rsi_StrRet=Return*replace_na(lag(Sig_RSI),0)
+               ,stoch_StrRet=Return*replace_na(lag(Sig_STOCH),0)
+               ,bb_StrRet=Return*replace_na(lag(Sig_BB),0)
+               ,adx_StrRet=Return*replace_na(lag(Sig_ADX),0)
+               ,ichi_StrRet=Return*replace_na(lag(Sig_ICHI),0)
+               ,meanRev_StrRet=Return*replace_na(lag(Sig_MeanRev),0))%>%
+        mutate(Sig_ALL=case_when(
+          Tot_signals>4~(+1)
+          ,Tot_signals<(-4)~(-1)
+          ,TRUE~NA_real_)
+        ,all_StrRet=Return*replace_na(lag(Sig_ALL),0))%>%
+        # **Stop-Loss Dinamico con ATR**
+        mutate(Stop_Loss=case_when(
+          Sig_ALL==1~close-(atr*0.50)
+          ,Sig_ALL==-1~close+(atr*0.50)
+          ,TRUE~NA_real_)
+          ,Take_Profit=case_when(
+            Sig_ALL==1~close+(atr*1.00)
+            ,Sig_ALL==-1~close-(atr*1.00)
+            ,TRUE~NA_real_)
+          )
       
-      # FX_signals$Strategy_Return%>%sum(na.rm=TRUE)
+      # FX_signals$all_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$sma_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$ema_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$macd_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$rsi_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$stoch_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$bb_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$adx_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$ichi_StrRet%>%sum(na.rm=TRUE)
+      # FX_signals$meanRev_StrRet%>%sum(na.rm=TRUE)
       
-      write_feather(FX_signals, file.path(path_Output,Periodicity,paste0(FX_symbol, "_signals.feather")))
+      # returns_strat<-FX_signals%>%
+      #   select(all_of(c("sma_StrRet", "ema_StrRet", "macd_StrRet", "rsi_StrRet", "stoch_StrRet", "bb_StrRet", "adx_StrRet"#, "ichi_StrRet", "meanRev_StrRet"
+      #                   )))%>%drop_na()
+      # 
+      # mean_ret <- colMeans(returns_strat)%>%scale()
+      # cov_ret <- cov(returns_strat)
+      # 
+      # varianze<-cov_ret%>%diag()
+      # mean_sharpe_proxy <- mean_ret / varianze  # Rendimento atteso su rischio
+      # 
+      # n <- length(mean_ret)
+      # Dmat <- 2 * as.matrix(cov_ret)      # Matrice di varianza pesata (2x per QP)
+      # dvec <- as.numeric(mean_sharpe_proxy)        # Rendimenti da massimizzare
+      # Amat <- cbind(rep(1, n), diag(n))     # Vincoli: somma = 1, pesi >= 0
+      # bvec <- c(1, rep(0, n))
+      # meq <- 1                              # Solo il primo vincolo è di uguaglianza
+      # 
+      # opt <- solve.QP(Dmat = Dmat, dvec = dvec, Amat = Amat, bvec = bvec, meq = meq)
+      # w_opt <- opt$solution
+      # names(w_opt) <- colnames(returns_strat)
+      # 
+      # w_opt_clean <- w_opt
+      # w_opt_clean[w_opt_clean < 0] <- 0
+      # w_opt_clean <- w_opt_clean / sum(w_opt_clean)  # Ribilancia per sommare a 1
+      # print(round(w_opt_clean, 4))
+      
+      FX_signals<-FX_signals%>%arrange(date%>%desc())
+      
+      write_feather(FX_signals
+                    , file.path(path_Output,Periodicity,paste0(FX_symbol, "_signals.feather")))
+      writexl::write_xlsx(FX_signals
+                          , file.path(path_Output,Periodicity,paste0(FX_symbol, "_signals.xlsx")))
       
       pb$tick()
     }
